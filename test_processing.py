@@ -12,6 +12,10 @@ predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 
 
 def process1(queue, count, check, string_var, voice):
+    display_text_start_time = 0  # Variable to track the start time of text display
+    display_duration = 2.0  # Duration to display the text in seconds
+    display_text = False  # Flag to control text display
+
     cap = cv2.VideoCapture(0)
     while True:
         ret, frame = cap.read()
@@ -28,17 +32,39 @@ def process1(queue, count, check, string_var, voice):
                 # Save the face image
                 save_path = "facepath\\" + str(string_var[0]) + ".jpg"
                 cv2.imwrite(save_path, framecpy)
-
+                 
                 # Update data and reset counters 
                 gh.update_data(str(string_var[0]), save_path)
                 count.value = 0
                 check.value = 0
+                display_text = True  # Set the flag to display text
+                display_text_start_time = time.time()  # Record the start time for text display
+
+        # Get frame dimensions
+        height, width, _ = frame.shape
+        
+        # Calculate position to center the text
+        text_x = int((width - 200) / 2)  # Adjust the offset as needed
+        text_y = int((height + 50) / 2)  # Adjust the offset as needed
+        if check.value==0:
+            cv2.putText(frame, "Vui long quet QR", (x, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        if display_text:
+            cv2.putText(frame, "Captured Successfully", (text_x, text_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        # Check if it's time to stop displaying the text
+        if display_text and time.time() - display_text_start_time >= display_duration:
+            display_text = False  # Reset the flag
 
         queue.put(frame)
         cv2.imshow("Processed Frame", frame)
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             break
+
+
+
 
 def process2(queue, count, check, string_var,voice):
     ser = serial.Serial('COM6', 9600, timeout=2)  # Thiết lập timeout ở đây
